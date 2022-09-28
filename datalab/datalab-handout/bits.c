@@ -242,6 +242,7 @@ int isLessOrEqual(int x, int y)
   int a = ((((x >> 31) & 0x1) + ((y >> 31) & 0x1)) & 0x1);
   int isNagetive = (y + (~x) + 1) >> 31;
   return (((!a) & !isNagetive) | (a & (!!(x >> 31))));
+  break;
 }
 // 4
 /*
