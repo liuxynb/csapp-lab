@@ -302,10 +302,19 @@ int howManyBits(int x)
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf)
+//注意两倍f
 {
   unsigned s = uf & (1 << 31);
-  unsigned exp = uf & 0x7f800000;
+  unsigned exp = (uf & 0x7f800000) >> 23;
   unsigned frac = uf & 0x7fffff;
+  if (exp == 0xff)
+    return uf;
+  if (exp == 0)
+    return (frac << 1 | s);
+  ++exp;
+  if (exp == 255)
+    return 0x7f800000 | s;       //返回无穷大。
+  return s | (exp << 23) | frac; //一般情况。10 ops.
 }
 /*
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -319,9 +328,36 @@ unsigned floatScale2(unsigned uf)
  *   Max ops: 30
  *   Rating: 4
  */
+// equivalent 相等的
+// argument 参数
 int floatFloat2Int(unsigned uf)
+// Just notice that E = e - bias, and in the float, the bias equals to 127.(in double 1023)
 {
-  return 2;
+  unsigned s = uf & (1 << 31);
+  unsigned exp = (uf & 0x7f800000) >> 23;
+  unsigned frac = uf & 0x7fffff; //提取编码符号s，编码阶码M和编码尾数E。
+  int shiftNum = exp - 127 - 23; //移动位数，注意公式((-1)^s)*M*2^E.
+  if (shiftNum < -23)
+    return 0;
+  else if (shiftNum >= 31)
+    return 0x80000000u;
+  else
+  {
+    if (!s)
+    {
+      if (shiftNum & (0x80000000))
+        return ((frac + (1 << 23)) >> ((~shiftNum) + 1));
+      else
+        return ((frac + (1 << 23)) << (shiftNum));
+    }
+    else
+    {
+      if (shiftNum & (0x80000000))
+        return (~((frac + (1 << 23)) >> ((~shiftNum) + 1))) + 1;
+      else
+        return (~((frac + (1 << 23)) << (shiftNum))) + 1; // 30 ops in total.
+    }
+  }
 }
 /*
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -337,6 +373,12 @@ int floatFloat2Int(unsigned uf)
  *   Rating: 4
  */
 unsigned floatPower2(int x)
+// 公式((-1)^s)*M*2^E. or((-1)^s)*(1.frac)*2^(exp-127)[规格化]
 {
-  return 2;
+  int exp = x + 127;
+  if (exp <= 0)
+    return 0;
+  if (exp >= 255)
+    return 0x7f800000;
+  return exp << 23;
 }
