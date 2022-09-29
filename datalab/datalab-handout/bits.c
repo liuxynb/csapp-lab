@@ -175,7 +175,7 @@ int isTmax(int x)
   x = ~x;
   int y = ~x + 1;
   return ((!(y ^ x)) & (!!x)); // 8 ops in all
-  //1111
+  // 1111
 }
 /*
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -244,7 +244,6 @@ int isLessOrEqual(int x, int y)
   int a = ((((x >> 31) & 0x1) + ((y >> 31) & 0x1)) & 0x1);
   int isNagetive = (y + (~x) + 1) >> 31;
   return (((!a) & !isNagetive) | (a & (!!(x >> 31))));
-
 }
 // 4
 /*
@@ -273,8 +272,22 @@ int logicalNeg(int x)
  *  Rating: 4
  */
 int howManyBits(int x)
+//负数取反后可与正数类似
+//关注0001
 {
-  return 0;
+  x = conditional(x & 0x80000000, ~x, x); // 8 ops
+  int right16 = (!!(x >> 16)) << 4;
+  x = x >> right16;
+  int right8 = (!!(x >> 8)) << 3;
+  x = x >> right8;
+  int right4 = (!!(x >> 4)) << 2;
+  x = x >> right4;
+  int right2 = (!!(x >> 2)) << 1;
+  x = x >> right2;
+  int right1 = (!!(x >> 1));
+  x = x >> right1;
+  int right0 = (!!x);
+  return right16 + right8 + right4 + right2 + right1 + right0 + 1; // 26 + 8 = 34 ops.
 }
 // float
 /*
@@ -290,7 +303,9 @@ int howManyBits(int x)
  */
 unsigned floatScale2(unsigned uf)
 {
-  return 2;
+  unsigned s = uf & (1 << 31);
+  unsigned exp = uf & 0x7f800000;
+  unsigned frac = uf & 0x7fffff;
 }
 /*
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
