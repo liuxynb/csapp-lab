@@ -38,18 +38,18 @@ typedef uint8_t Bool;
 typedef struct
 {
     Bool valid;
-    __uint64_t tag;     // tag bits
-    __uint64_t counter; // for LRU way
+    uint64_t tag;     // tag bits
+    uint64_t counter; // for LRU way
 } Line;
 typedef struct
 {
     Line *lines;
-    __uint64_t length;
+    uint64_t length;
 } Set;
 typedef struct
 {
     Set *sets;
-    __uint64_t length;
+    uint64_t length;
 } Cache;
 
 typedef struct
@@ -60,10 +60,10 @@ typedef struct
 } Result;
 typedef struct
 {
-    __uint64_t s;    // the number of sets index's bits;
-    __uint64_t b;    // the number of each cache blocks index 's bits;
-    __uint64_t S;    // number of sets;
-    __uint64_t E;    // number of lines;
+    uint64_t s;      // the number of sets index's bits;
+    uint64_t b;      // the number of each cache blocks index 's bits;
+    uint64_t S;      // number of sets;
+    uint64_t E;      // number of lines;
     FILE *tracefile; // file pointer;
 } Options;
 
@@ -90,6 +90,7 @@ Cache Create_Cache(Options op)
         {
             perror("Failed to create lines in sets");
         }
+        cache.sets[i].length = op.E;
     }
     return cache;
 }
@@ -182,6 +183,7 @@ Result Run_cache(Cache cache, Options op)
     }
     return result;
 }
+
 /*get options*/
 Options Get_Options(int argc, char *const argv[])
 {
@@ -262,14 +264,12 @@ Options Get_Options(int argc, char *const argv[])
 
     return opt;
 }
-int main(int argc, char *argv[])
+int main(int argc, char *const argv[])
 {
     Options op = Get_Options(argc, argv);
     Cache cache = Create_Cache(op);
     Result result = Run_cache(cache, op);
     Delete_Cache(cache);
-    // // debug
-    // printf("%d %d %d\n", result.hit, result.miss, result.eviction);
     printSummary(result.hit, result.miss, result.eviction);
     return 0;
 }
