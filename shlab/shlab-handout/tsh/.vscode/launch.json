@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/liuxingyuan/csapplab-main/shlab/shlab-handout",
-      "program": "/home/liuxingyuan/csapplab-main/shlab/shlab-handout/build/Debug/outDebug",
+      "cwd": "/home/liuxingyuan/csapplab-main/shlab/shlab-handout/tsh",
+      "program": "/home/liuxingyuan/csapplab-main/shlab/shlab-handout/tsh/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
