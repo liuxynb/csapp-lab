@@ -1,6 +1,6 @@
 /*
  * mm-naive.c - The fastest, least memory-efficient malloc package.
- * 
+ *
  * In this naive approach, a block is allocated by simply incrementing
  * the brk pointer.  A block is pure payload. There are no headers or
  * footers.  Blocks are never coalesced or reused. Realloc is
@@ -32,19 +32,65 @@ team_t team = {
     /* Second member's full name (leave blank if none) */
     "",
     /* Second member's email address (leave blank if none) */
-    ""
-};
+    ""};
 
 /* single word (4) or double word (8) alignment */
 #define ALIGNMENT 8
 
 /* rounds up to the nearest multiple of ALIGNMENT */
-#define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
-
+#define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-/* 
+/*Basic constants and macros*/
+#define WordSize 4
+#define DWordSize 8 /*double word size(bytes)*/
+#define InitChunkSize (1 << 6)
+#define ChunkSize (1 << 12) /*extend heap by this amount bytes*/
+
+#define MaxNumber 16
+
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) > (y) ? (y) : (x))
+/*Pack a size and allocated bit into a word*/
+
+/*The header of the chunk(块) -> [the size of the chunk(29)][padding bit(2)][allocated?(1)] */
+#define PACK(size, alloc) ((size) | (alloc))
+
+/*Read and write a word at address p*/
+// Get the info of the address (1 byte (32 bits))
+#define GET(p) (*(unsigned int *)(p))
+// Assign the content of a word to the address
+#define PUT(p, value) (*(unsigned int *)(p) = (value))
+
+/*Read the size and allocated fields from address p  */
+// Get the chunk size
+#define GET_SIZE(p) (GET(p) & ~0x7) /*(0111) So get the higher 29 bits*/
+// Get the last bit to check if allocated.
+#define GET_ALLOC(p) (GET(p) & 0x1)
+
+// bp 代表块指针，位置是头部一个字的地址，也就是有效载荷的开头地址
+/*Given block ptr bp ,compute address of its header and footer*/
+// bp - one word = the address of the head
+#define HDP(bp) ((char *)(bp)-WordSize)
+// bp + (the chunk size - the size of head and foot) = the address of the foot right now
+#define FTP(bp) ((char *)(bp) + GET_SIZE(HDP(bp)) - DWordSize)
+
+/*Given block ptr bp, compute address(bp) of next and previous blocks*/
+// bp + 当前块大小（由头部得到） =  下一个地址
+#define NEXT_BLOCKP(bp) ((char *)(bp) + GET_SIZE(HDP(bp)))
+// bp - 上一个块大小（由脚部得到） = 上一个块的地址
+#define PREV_BLOCKP(bp) ((char *)(bp)-GET_SIZE(FTP(bp)))
+
+// 自由块的前一个和后一个条目的地址
+#define PRED_PTR(bp) ((char *)(bp)) // pred：前任
+#define SUCC_PTR(bp) ((char *)(bp) + WordSize)
+
+// 第二维中的前一个块地址和后一个块地址
+#define PRED(bp) (*(char **)(bp))
+#define SUCC(bp) (*(char **)(SUCC_PTR(bp)))
+
+/*
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
@@ -52,7 +98,7 @@ int mm_init(void)
     return 0;
 }
 
-/* 
+/*
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
@@ -61,8 +107,9 @@ void *mm_malloc(size_t size)
     int newsize = ALIGN(size + SIZE_T_SIZE);
     void *p = mem_sbrk(newsize);
     if (p == (void *)-1)
-	return NULL;
-    else {
+        return NULL;
+    else
+    {
         *(size_t *)p = size;
         return (void *)((char *)p + SIZE_T_SIZE);
     }
@@ -83,28 +130,14 @@ void *mm_realloc(void *ptr, size_t size)
     void *oldptr = ptr;
     void *newptr;
     size_t copySize;
-    
+
     newptr = mm_malloc(size);
     if (newptr == NULL)
-      return NULL;
+        return NULL;
     copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
     if (size < copySize)
-      copySize = size;
+        copySize = size;
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
     return newptr;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
