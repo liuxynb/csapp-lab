@@ -48,7 +48,7 @@ team_t team = {
 #define InitChunkSize (1 << 6)
 #define ChunkSize (1 << 12) /*extend heap by this amount bytes*/
 
-#define MaxNumber 16
+#define MAXNUMBER 16
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) > (y) ? (y) : (x))
@@ -90,11 +90,46 @@ team_t team = {
 #define PRED(bp) (*(char **)(bp))
 #define SUCC(bp) (*(char **)(SUCC_PTR(bp)))
 
+//Put the address of ptr into the pointer p
+#define SET_PTR(p,ptr) (*(unsigned int *)(p) = (unsigned int)(ptr))
+
+//获取和设置列表中的值
+#define GET_FREE_LIST_PTR(i) (*(free_lists+i))
+#define SET_FREE_LIST_PTR(i, bp) (*(free_lists+i)=bp)
+
+/*Glabal varibles*/
+static char *heap_listp = 0; /*Pointer to first block*/
+static char** free_lists; /*Store the free 2-demation arrays*/
+
+/*Function prototypes for internal helper routines*/
+static void *extend_heap(size_t size);
+static void *coalescs(void *bp);
+static void *place(void *bp,size_t asize);
+static void *add(void *bp,size_t size);
+static void *delete(void *bp);
+
 /*
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
+    if((long)(free_lists = mem_sbrk(MAXNUMBER*sizeof(char*)))==-1)
+    {
+        return -1;
+    }
+    //initial the free lists:
+    for (int i = 0; i < MAXNUMBER; i++)
+    {
+        SET_FREE_LIST_PTR(i,NULL);        /* code */
+    }
+    /*创建一个空堆*/
+    //申请4个子的块空间
+    if((long)(heap_listp = mem_sbrk(4*WordSize))==-1)
+    {
+        return -1;
+    }
+    PUT(heap_listp,0);/*对齐填充*/
+    PUT(heap_listp+(1*WordSize),PACK(DWordSize,1));/*序言块头部*/
     return 0;
 }
 
