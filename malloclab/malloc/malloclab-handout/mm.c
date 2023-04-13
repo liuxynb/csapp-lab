@@ -152,7 +152,7 @@ void *mm_malloc(size_t size)
         return NULL;
 
     /*Adjust block size to include overhead and alignment reqs.*/
-    if (size <= DSIZE)
+    if (size <= WSIZE)
         asize = DSIZE;
     else
         asize = DSIZE * ((size + (WSIZE) + (DSIZE - 1)) / DSIZE);
@@ -195,31 +195,31 @@ static void *coalesce(void *bp)
 #ifdef DEBUG
     printf("%s\n", __func__);
 #endif
-    size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
+    size_t prev_alloc = GET_PREALLOC(HDRP(bp));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
-    if (prev_alloc && next_alloc)
-    {
-        return bp;
-    }
-    else if (prev_alloc && !next_alloc)
-    {
+
+    if (prev_alloc && !next_alloc)
+    { /* Case 2 */
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 1, 0));
         PUT(FTRP(bp), PACK(size, 1, 0));
     }
+
     else if (!prev_alloc && next_alloc)
-    {
+    { /* Case 3 */
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size, 1, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 1, 0));
         bp = PREV_BLKP(bp);
     }
-    else
-    {
-        size += GET_SIZE(HDRP(NEXT_BLKP(bp))) + GET_SIZE(HDRP(PREV_BLKP(bp)));
+
+    else if (!prev_alloc && !next_alloc)
+    { /* Case 4 */
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
+                GET_SIZE(FTRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 1, 0));
-        PUT(HDRP(NEXT_BLKP(bp)), PACK(size, 1, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 1, 0));
         bp = PREV_BLKP(bp);
     }
     set_next_prealloc(bp, 0);
