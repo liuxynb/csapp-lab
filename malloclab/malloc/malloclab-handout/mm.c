@@ -90,6 +90,9 @@ inline void *set_next_prealloc(void *bp, size_t prealloc);
  */
 int mm_init(void)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+#endif
     /*Create the initial empty heap*/
     if ((heap_listp = mem_sbrk(4 * WSIZE)) == (void *)-1)
         return -1;
@@ -112,6 +115,9 @@ int mm_init(void)
  */
 static void *extend_heap(size_t words)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+#endif
     char *bp;
     size_t size;
     size_t prealloc;
@@ -124,11 +130,8 @@ static void *extend_heap(size_t words)
     PUT(HDRP(bp), PACK(size, prealloc, 0));  /*Free block header*/
     PUT(FTRP(bp), PACK(size, prealloc, 0));  /*Free block footer*/
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 0, 1)); /*New epilogue header*/
-#ifdef DEBUG
-    printf("%x", bp - 4)
-#endif
-        /*Coalease if the previous block was free*/
-        return coalesce(bp);
+    /*Coalease if the previous block was free*/
+    return coalesce(bp);
 }
 
 /*
@@ -137,6 +140,9 @@ static void *extend_heap(size_t words)
  */
 void *mm_malloc(size_t size)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+#endif
     size_t asize;      /*Adjusted block size */
     size_t extendsize; /*Amount to extend heap if no fit*/
     char *bp;
@@ -149,7 +155,7 @@ void *mm_malloc(size_t size)
     if (size <= DSIZE)
         asize = DSIZE;
     else
-        asize = DSIZE * ((size + (DSIZE) + (DSIZE - 1)) / DSIZE);
+        asize = DSIZE * ((size + (WSIZE) + (DSIZE - 1)) / DSIZE);
 
     /*Search the free list for a fit */
     if ((bp = find_fit(asize)) != NULL)
@@ -171,6 +177,9 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *bp)
 {
+#ifndef DEBUG
+    printf("%s", __func__);
+#endif
     size_t size = GET_SIZE(HDRP(bp));
     size_t prealloc = GET_PREALLOC(HDRP(bp));
     PUT(HDRP(bp), PACK(size, prealloc, 0));
@@ -184,9 +193,7 @@ void mm_free(void *bp)
 static void *coalesce(void *bp)
 {
 #ifdef DEBUG
-#define CHECKHEAP(verbose)
     printf("%s\n", __func__);
-    mm_checkheap(verbose);
 #endif
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
@@ -226,6 +233,9 @@ static void *coalesce(void *bp)
 
 void *mm_realloc(void *ptr, size_t size)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+#endif
     if (ptr == NULL)
         return mm_malloc(size);
     if (size == 0)
@@ -235,7 +245,7 @@ void *mm_realloc(void *ptr, size_t size)
     if ((newptr = mm_malloc(size)) == NULL)
         return NULL;
     size = GET_SIZE(HDRP(ptr));
-    copy_size = GET_SIZE(HDRP(ptr));
+    copy_size = GET_SIZE(HDRP(newptr));
     if (size < copy_size)
         copy_size = size;
     memcpy(newptr, ptr, copy_size - WSIZE);
@@ -248,6 +258,9 @@ void *mm_realloc(void *ptr, size_t size)
  */
 static void place(void *bp, size_t asize)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+#endif
     size_t size = GET_SIZE(HDRP(bp));
 
     if ((size - asize) >= DSIZE)
@@ -269,6 +282,10 @@ static void place(void *bp, size_t asize)
  */
 inline void *set_next_prealloc(void *bp, size_t prealloc)
 {
+#ifndef DEBUG
+    printf("%s\n", __func__);
+    printf("bp = 0x%x\n", bp);
+#endif
     size_t size = GET_SIZE(HDRP(NEXT_BLKP(bp)));
     size_t alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     PUT(HDRP(NEXT_BLKP(bp)), PACK(size, prealloc, alloc));
@@ -278,6 +295,10 @@ inline void *set_next_prealloc(void *bp, size_t prealloc)
  */
 static void *find_fit(size_t asize)
 {
+#ifndef DEBUG
+    printf("%s\n and asize = %d\n", __func__, asize);
+
+#endif
     char *bp = pre_listp;
     size_t alloc;
     size_t size;
