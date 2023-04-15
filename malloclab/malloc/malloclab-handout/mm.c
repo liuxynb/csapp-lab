@@ -90,7 +90,7 @@ inline void *set_next_prealloc(void *bp, size_t prealloc);
  */
 int mm_init(void)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
 #endif
     /*Create the initial empty heap*/
@@ -115,7 +115,7 @@ int mm_init(void)
  */
 static void *extend_heap(size_t words)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
 #endif
     char *bp;
@@ -140,7 +140,7 @@ static void *extend_heap(size_t words)
  */
 void *mm_malloc(size_t size)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
 #endif
     size_t asize;      /*Adjusted block size */
@@ -177,7 +177,7 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *bp)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s", __func__);
 #endif
     size_t size = GET_SIZE(HDRP(bp));
@@ -233,7 +233,7 @@ static void *coalesce(void *bp)
 
 void *mm_realloc(void *ptr, size_t size)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
 #endif
     if (ptr == NULL)
@@ -258,7 +258,7 @@ void *mm_realloc(void *ptr, size_t size)
  */
 static void place(void *bp, size_t asize)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
 #endif
     size_t size = GET_SIZE(HDRP(bp));
@@ -282,7 +282,7 @@ static void place(void *bp, size_t asize)
  */
 inline void *set_next_prealloc(void *bp, size_t prealloc)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n", __func__);
     printf("bp = 0x%x\n", bp);
 #endif
@@ -295,7 +295,7 @@ inline void *set_next_prealloc(void *bp, size_t prealloc)
  */
 static void *find_fit(size_t asize)
 {
-#ifndef DEBUG
+#ifdef DEBUG
     printf("%s\n and asize = %d\n", __func__, asize);
 
 #endif
