@@ -12,13 +12,15 @@ static const char *http_version = "HTTP/1.0";
 void doit(int fd);
 void get_path(char uri[], char host[], char port[], char path[]);
 void read_requesthdrs(rio_t *rp);
+void *thread(void *vargp);
 
 int main(int argc, char **argv)
 {
-    int listenfd, connfd;
+    int listenfd, *connfdp;
     char hostname[MAXLINE], port[MAXLINE];
     socklen_t clientlen;
     struct sockaddr clientaddr;
+    pthread_t tid;
 
     // 判断
     if (argc != 2)
@@ -39,16 +41,26 @@ int main(int argc, char **argv)
     while (1)
     {
         clientlen = sizeof(clientaddr);
+        // 防止竞争
+        connfdp = Malloc(sizeof(int));
         // 返回已连接描述符
-        connfd = Accept(listenfd, &clientaddr, &clientlen);
+        *connfdp = Accept(listenfd, &clientaddr, &clientlen);
         // 将套接字地址结构sa转换成对应的主机和服务名字符串，并将它们复制到host和servcice缓冲区；
         Getnameinfo(&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-        doit(connfd);
-        Close(connfd);
+        Pthread_create(&tid, NULL, thread, connfdp);
     }
-
     return 0;
+}
+
+void *thread(void *vargp)
+{
+    int connfd = *((int *)vargp);
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    doit(connfd);
+    Close(connfd);
+    return;
 }
 
 void doit(int fd)
@@ -63,16 +75,12 @@ void doit(int fd)
     Rio_readinitb(&rio, fd);
     // 无输入
     if (!Rio_readlineb(&rio, buf, MAXLINE))
-    {
         return;
-    }
     // GET http://www.cmu.edu/hub/index.html HTTP/1.1
     sscanf(buf, "%s %s %s", method, uri, version);
     // 忽略GET以外的方法
     if (strcasecmp(method, "GET"))
-    {
         return;
-    }
     // 获得path
     get_path(uri, host, port, path);
     printf("%s %s %s %s %s\n", method, host, port, path, version);
