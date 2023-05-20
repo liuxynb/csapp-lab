@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "csapp.h"
+#include "cache.h"
 
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
@@ -8,6 +9,8 @@
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 static const char *http_version = "HTTP/1.0";
+static const char *default_port = "80";
+Cache *cache;
 
 void doit(int fd);
 void get_path(char uri[], char host[], char port[], char path[]);
@@ -37,6 +40,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    cache = (Cache *)malloc(sizeof(Cache));
+    signal(SIGPIPE, SIG_IGN);
+    init_cache(cache, MAX_CACHE_SIZE, MAX_OBJECT_SIZE);
     listenfd = Open_listenfd(argv[1]);
     while (1)
     {
@@ -50,6 +56,7 @@ int main(int argc, char **argv)
         printf("Accepted connection from (%s, %s)\n", hostname, port);
         Pthread_create(&tid, NULL, thread, connfdp);
     }
+    free_cache(cache);
     return 0;
 }
 
@@ -81,6 +88,11 @@ void doit(int fd)
     // 忽略GET以外的方法
     if (strcasecmp(method, "GET"))
         return;
+    else
+        printf("Not implement!\n");
+    if (reader(cache, uri, fd) == 1)
+        printf("Read from cache!\n");
+
     // 获得path
     get_path(uri, host, port, path);
     printf("%s %s %s %s %s\n", method, host, port, path, version);
@@ -113,12 +125,23 @@ void doit(int fd)
 
     // 返回给客户端
     // 不要使用scanf或rio_readlineb来读二进制文件，像scanf或rio_readlineb这样的函数是专门设计来读取文本文件的
+    int size = 0;
+    char data[MAX_OBJECT_SIZE];
+
     while ((n = Rio_readnb(&rio_output, buf, MAXLINE)))
     {
+
+        if (errno == ECONNRESET)
+            continue;
+        if (size <= MAX_OBJECT_SIZE)
+        {
+            memcpy(data + size, buf, n);
+            size += n;
+        }
         // 不能使用Rio_writen(fd, buf, strlen(buf)), 因为不一定是字符串
         Rio_writen(fd, buf, n);
     }
-
+    insert_cache(cache, uri, data);
     Close(clientfd);
 
     return;
@@ -177,7 +200,11 @@ void get_path(char uri[], char host[], char port[], char path[])
     }
 
     host[j] = '\0';
-    port[k] = '\0';
+    // 默认端口
+    if (k == 0)
+        strcpy(port, default_port);
+    else
+        port[k] = '\0';
     path[l] = '\0';
 
     return;
